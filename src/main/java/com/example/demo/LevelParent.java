@@ -29,9 +29,12 @@ public abstract class LevelParent extends Observable {
 	private final List<ActiveActorDestructible> enemyUnits;
 	private final List<ActiveActorDestructible> userProjectiles;
 	private final List<ActiveActorDestructible> enemyProjectiles;
-	
+
+	private final LevelView levelView;
+
 	private int currentNumberOfEnemies;
-	private LevelView levelView;
+
+	private static final Set<KeyCode> activeKeys = new HashSet<>();
 
 	public LevelParent(String backgroundImageName, double screenHeight, double screenWidth, int playerInitialHealth) {
 		this.root = new Group();
@@ -43,7 +46,7 @@ public abstract class LevelParent extends Observable {
 		this.userProjectiles = new ArrayList<>();
 		this.enemyProjectiles = new ArrayList<>();
 
-		this.background = new ImageView(new Image(getClass().getResource(backgroundImageName).toExternalForm()));
+		this.background = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(backgroundImageName)).toExternalForm()));
 		this.screenHeight = screenHeight;
 		this.screenWidth = screenWidth;
 		this.enemyMaximumYPosition = screenHeight - SCREEN_HEIGHT_ADJUSTMENT;
@@ -61,6 +64,8 @@ public abstract class LevelParent extends Observable {
 
 	protected abstract LevelView instantiateLevelView();
 
+	protected abstract void misc();
+
 	public Scene initializeScene() {
 		initializeBackground();
 		initializeFriendlyUnits();
@@ -74,7 +79,6 @@ public abstract class LevelParent extends Observable {
 	}
 
 	public void goToNextLevel(String levelName) {
-		setChanged();
 		notifyObservers(levelName);
 	}
 
@@ -83,6 +87,7 @@ public abstract class LevelParent extends Observable {
 		updateActors();
 		generateEnemyFire();
 		updateNumberOfEnemies();
+		handleInput();
 		handleEnemyPenetration();
 		handleUserProjectileCollisions();
 		handleEnemyProjectileCollisions();
@@ -91,6 +96,7 @@ public abstract class LevelParent extends Observable {
 		updateKillCount();
 		updateLevelView();
 		checkIfGameOver();
+		misc();
 	}
 
 	private void initializeTimeline() {
@@ -103,25 +109,28 @@ public abstract class LevelParent extends Observable {
 		background.setFocusTraversable(true);
 		background.setFitHeight(screenHeight);
 		background.setFitWidth(screenWidth);
+
 		background.setOnKeyPressed(new EventHandler<KeyEvent>() {
 			public void handle(KeyEvent e) {
-				KeyCode kc = e.getCode();
-				if (kc == KeyCode.UP) user.moveUp();
-				if (kc == KeyCode.DOWN) user.moveDown();
-				if (kc == KeyCode.SPACE) fireProjectile();
+				activeKeys.add(e.getCode());
 			}
 		});
+
 		background.setOnKeyReleased(new EventHandler<KeyEvent>() {
 			public void handle(KeyEvent e) {
-				KeyCode kc = e.getCode();
-				if (kc == KeyCode.UP || kc == KeyCode.DOWN) user.stop();
+				activeKeys.remove(e.getCode());
 			}
 		});
+
 		root.getChildren().add(background);
 	}
 
 	private void fireProjectile() {
 		ActiveActorDestructible projectile = user.fireProjectile();
+
+		if (projectile == null)
+			return;
+
 		root.getChildren().add(projectile);
 		userProjectiles.add(projectile);
 	}
@@ -158,6 +167,25 @@ public abstract class LevelParent extends Observable {
 		actors.removeAll(destroyedActors);
 	}
 
+	private void handleInput() {
+		if (activeKeys.contains(KeyCode.UP))
+			user.moveUp();
+		if (activeKeys.contains(KeyCode.DOWN))
+			user.moveDown();
+		if (activeKeys.contains(KeyCode.LEFT))
+			user.moveLeft();
+		if (activeKeys.contains(KeyCode.RIGHT))
+			user.moveRight();
+		if (activeKeys.contains(KeyCode.SPACE))
+			fireProjectile();
+
+		if ((activeKeys.contains(KeyCode.UP) && activeKeys.contains(KeyCode.DOWN)) || (activeKeys.contains(KeyCode.LEFT) && activeKeys.contains(KeyCode.RIGHT)))
+			user.stop();
+
+		if (!activeKeys.contains(KeyCode.UP) && !activeKeys.contains(KeyCode.DOWN) && !activeKeys.contains(KeyCode.LEFT) && !activeKeys.contains(KeyCode.RIGHT))
+			user.stop();
+	}
+
 	private void handlePlaneCollisions() {
 		handleCollisions(friendlyUnits, enemyUnits);
 	}
@@ -171,7 +199,7 @@ public abstract class LevelParent extends Observable {
 	}
 
 	private void handleCollisions(List<ActiveActorDestructible> actors1,
-			List<ActiveActorDestructible> actors2) {
+								  List<ActiveActorDestructible> actors2) {
 		for (ActiveActorDestructible actor : actors2) {
 			for (ActiveActorDestructible otherActor : actors1) {
 				if (actor.getBoundsInParent().intersects(otherActor.getBoundsInParent())) {
@@ -213,6 +241,10 @@ public abstract class LevelParent extends Observable {
 	protected void loseGame() {
 		timeline.stop();
 		levelView.showGameOverImage();
+	}
+
+	protected void stopLevel() {
+		timeline.stop();
 	}
 
 	protected UserPlane getUser() {
