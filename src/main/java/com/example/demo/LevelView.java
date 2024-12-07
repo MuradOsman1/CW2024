@@ -13,7 +13,7 @@ public class LevelView {
 	private final Group root;
 	private final WinImage winImage;
 	private final GameOverImage gameOverImage;
-	private final HeartDisplay heartDisplay;
+	protected final HeartDisplay heartDisplay;
 
 	public LevelView(Group root, int heartsToDisplay) {
 		this.root = root;

@@ -1,8 +1,6 @@
 package com.example.demo.controller;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
 import com.example.demo.Observer;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -12,7 +10,7 @@ import com.example.demo.LevelParent;
 
 public class Controller implements Observer {
 
-	private static final String LEVEL_ONE_CLASS_NAME = "com.example.demo.LevelOne";
+	public static final String LEVEL_ONE_CLASS_NAME = "com.example.demo.LevelOne"; // Ensure this is accessible
 	private final Stage stage;
 
 	private LevelParent currentLevel;
@@ -21,33 +19,40 @@ public class Controller implements Observer {
 		this.stage = stage;
 	}
 
-	public void launchGame() throws ClassNotFoundException, NoSuchMethodException, SecurityException,
-			InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException  {
-
-		stage.show();
-		goToLevel(LEVEL_ONE_CLASS_NAME);
+	public void launchGame() {
+		try {
+			stage.show();
+			goToLevel(LEVEL_ONE_CLASS_NAME); // Start from Level One
+		} catch (Exception e) {
+			handleException(e, "Failed to launch the game.");
+		}
 	}
 
-	private void goToLevel(String className) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
-			InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-		Class<?> myClass = Class.forName(className);
-		Constructor<?> constructor = myClass.getConstructor(double.class, double.class);
-		currentLevel = (LevelParent) constructor.newInstance(stage.getHeight(), stage.getWidth());
-		currentLevel.addObserver(this);
-		Scene scene = currentLevel.initializeScene();
-		stage.setScene(scene);
-		currentLevel.startGame();
+	private void goToLevel(String className) {
+		try {
+			Class<?> levelClass = Class.forName(className);
+			Constructor<?> constructor = levelClass.getConstructor(double.class, double.class);
+			currentLevel = (LevelParent) constructor.newInstance(stage.getHeight(), stage.getWidth());
+			currentLevel.addObserver(this);
+			Scene scene = currentLevel.initializeScene();
+			stage.setScene(scene);
+			currentLevel.startGame();
+		} catch (Exception e) {
+			handleException(e, "Failed to load the level.");
+		}
 	}
 
 	@Override
 	public void update(String nextLevel) {
-		try {
-			goToLevel(nextLevel);
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException
-				 | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			Alert alert = new Alert(AlertType.ERROR);
-			alert.setContentText(e.getClass().toString());
-			alert.show();
-		}
+		goToLevel(nextLevel);
+	}
+
+	private void handleException(Exception e, String errorMessage) {
+		e.printStackTrace();
+		Alert alert = new Alert(AlertType.ERROR);
+		alert.setTitle("Error");
+		alert.setHeaderText(errorMessage);
+		alert.setContentText(e.getMessage());
+		alert.showAndWait();
 	}
 }
