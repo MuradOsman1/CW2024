@@ -4,6 +4,7 @@ public class LevelTwo extends LevelParent {
 
 	private static final String BACKGROUND_IMAGE_NAME = "/com/example/demo/images/background2.png";
 	private static final int PLAYER_INITIAL_HEALTH = 5;
+	private static final String NEXT_LEVEL = "com.example.demo.LevelThree";
 	private final Boss boss;
 	private final BossHealth bossHealth;
 	private LevelViewLevelTwo levelView;
@@ -26,7 +27,8 @@ public class LevelTwo extends LevelParent {
 			loseGame();
 		}
 		else if (boss.isDestroyed()) {
-			winGame();
+			stopLevel();
+			goToNextLevel(NEXT_LEVEL);
 		}
 	}
 

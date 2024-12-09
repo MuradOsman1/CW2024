@@ -1,15 +1,12 @@
 package com.example.demo;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 import javafx.animation.*;
-import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.*;
-import javafx.scene.input.*;
 import javafx.util.Duration;
 
 public abstract class LevelParent extends Observable {
@@ -30,24 +27,24 @@ public abstract class LevelParent extends Observable {
 	private final List<ActiveActorDestructible> enemyUnits;
 	private final List<ActiveActorDestructible> userProjectiles;
 	private final List<ActiveActorDestructible> enemyProjectiles;
+	private final List<ActiveActorDestructible> asteroids;
 
 	private final LevelView levelView;
 
 	private int currentNumberOfEnemies;
 
-	private static final Set<KeyCode> activeKeys = new HashSet<>();
-
 	public LevelParent(String backgroundImageName, double screenHeight, double screenWidth, int playerInitialHealth) {
 		this.root = new Group();
 		this.scene = new Scene(root, screenWidth, screenHeight);
 		this.timeline = new Timeline();
-		this.user = new UserPlane(playerInitialHealth);
+		this.background = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(backgroundImageName)).toExternalForm()));
+		this.user = new UserPlane(background, playerInitialHealth);
 		this.friendlyUnits = new ArrayList<>();
 		this.enemyUnits = new ArrayList<>();
 		this.userProjectiles = new ArrayList<>();
 		this.enemyProjectiles = new ArrayList<>();
+		this.asteroids = new ArrayList<>();
 
-		this.background = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(backgroundImageName)).toExternalForm()));
 		this.screenHeight = screenHeight;
 		this.screenWidth = screenWidth;
 		this.enemyMaximumYPosition = screenHeight - SCREEN_HEIGHT_ADJUSTMENT;
@@ -88,15 +85,16 @@ public abstract class LevelParent extends Observable {
 		updateActors();
 		generateEnemyFire();
 		updateNumberOfEnemies();
-		handleInput();
 		handleEnemyPenetration();
 		handleUserProjectileCollisions();
 		handleEnemyProjectileCollisions();
 		handlePlaneCollisions();
+		handleAsteroidCollisions();
 		removeAllDestroyedActors();
 		updateKillCount();
 		updateLevelView();
 		checkIfGameOver();
+		fireProjectile();
 		misc();
 	}
 
@@ -110,10 +108,6 @@ public abstract class LevelParent extends Observable {
 		background.setFocusTraversable(true);
 		background.setFitHeight(screenHeight);
 		background.setFitWidth(screenWidth);
-
-		background.setOnKeyPressed(e -> activeKeys.add(e.getCode()));
-
-		background.setOnKeyReleased(e -> activeKeys.remove(e.getCode()));
 
 		root.getChildren().add(background);
 	}
@@ -144,6 +138,7 @@ public abstract class LevelParent extends Observable {
 		enemyUnits.forEach(ActiveActorDestructible::updateActor);
 		userProjectiles.forEach(ActiveActorDestructible::updateActor);
 		enemyProjectiles.forEach(ActiveActorDestructible::updateActor);
+		asteroids.forEach(ActiveActorDestructible::updateActor);
 	}
 
 	private void removeAllDestroyedActors() {
@@ -151,6 +146,7 @@ public abstract class LevelParent extends Observable {
 		removeDestroyedActors(enemyUnits);
 		removeDestroyedActors(userProjectiles);
 		removeDestroyedActors(enemyProjectiles);
+		removeDestroyedActors(asteroids);
 	}
 
 	private void removeDestroyedActors(List<ActiveActorDestructible> actors) {
@@ -158,25 +154,6 @@ public abstract class LevelParent extends Observable {
 				.toList();
 		root.getChildren().removeAll(destroyedActors);
 		actors.removeAll(destroyedActors);
-	}
-
-	private void handleInput() {
-		if (activeKeys.contains(KeyCode.UP))
-			user.moveUp();
-		if (activeKeys.contains(KeyCode.DOWN))
-			user.moveDown();
-		if (activeKeys.contains(KeyCode.LEFT))
-			user.moveLeft();
-		if (activeKeys.contains(KeyCode.RIGHT))
-			user.moveRight();
-		if (activeKeys.contains(KeyCode.SPACE))
-			fireProjectile();
-
-		if ((activeKeys.contains(KeyCode.UP) && activeKeys.contains(KeyCode.DOWN)) || (activeKeys.contains(KeyCode.LEFT) && activeKeys.contains(KeyCode.RIGHT)))
-			user.stop();
-
-		if (!activeKeys.contains(KeyCode.UP) && !activeKeys.contains(KeyCode.DOWN) && !activeKeys.contains(KeyCode.LEFT) && !activeKeys.contains(KeyCode.RIGHT))
-			user.stop();
 	}
 
 	private void handlePlaneCollisions() {
@@ -189,6 +166,10 @@ public abstract class LevelParent extends Observable {
 
 	private void handleEnemyProjectileCollisions() {
 		handleCollisions(enemyProjectiles, friendlyUnits);
+	}
+
+	private void handleAsteroidCollisions() {
+		handleCollisions(userProjectiles, asteroids);
 	}
 
 	private void handleCollisions(List<ActiveActorDestructible> actors1,
@@ -257,6 +238,11 @@ public abstract class LevelParent extends Observable {
 		root.getChildren().add(enemy);
 	}
 
+	protected void addAsteroid(ActiveActorDestructible projectile) {
+		asteroids.add(projectile);
+		root.getChildren().add(projectile);
+	}
+
 	protected double getEnemyMaximumYPosition() {
 		return enemyMaximumYPosition;
 	}
@@ -271,6 +257,18 @@ public abstract class LevelParent extends Observable {
 
 	private void updateNumberOfEnemies() {
 		currentNumberOfEnemies = enemyUnits.size();
+	}
+
+	protected List<ActiveActorDestructible> getUserProjectiles() {
+		return userProjectiles;
+	}
+
+	protected List<ActiveActorDestructible> getEnemyUnits() {
+		return enemyUnits;
+	}
+
+	protected List<ActiveActorDestructible> getEnemyProjectiles() {
+		return enemyProjectiles;
 	}
 
 }

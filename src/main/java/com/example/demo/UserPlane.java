@@ -1,5 +1,11 @@
 package com.example.demo;
 
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+
+import java.util.HashSet;
+import java.util.Set;
+
 public class UserPlane extends FighterPlane {
 
 	private static final String IMAGE_NAME = "userplane.png";
@@ -14,13 +20,18 @@ public class UserPlane extends FighterPlane {
 	private static final int PROJECTILE_X_POSITION = 100;
 	private static final int PROJECTILE_Y_POSITION_OFFSET = 20;
 	private static final int MIN_FRAMES_PER_FIRE = 5;
+	private static final Set<KeyCode> activeKeys = new HashSet<>();
 	private int framesSinceLastShot = 0;
 	private int verticalVelocityMultiplier;
 	private int horizontalVelocityMultiplier;
 	private int numberOfKills;
 
-	public UserPlane(int initialHealth) {
+	public UserPlane(ImageView background, int initialHealth) {
 		super(IMAGE_NAME, IMAGE_HEIGHT, INITIAL_X_POSITION, INITIAL_Y_POSITION, initialHealth);
+
+		background.setOnKeyPressed(e -> activeKeys.add(e.getCode()));
+		background.setOnKeyReleased(e -> activeKeys.remove(e.getCode()));
+
 		verticalVelocityMultiplier = 0;
 		horizontalVelocityMultiplier = 0;
 	}
@@ -47,14 +58,33 @@ public class UserPlane extends FighterPlane {
 
 	@Override
 	public void updateActor() {
+		handleInput();
 		updatePosition();
+	}
+
+	private void handleInput() {
+		if (activeKeys.contains(KeyCode.UP))
+			moveUp();
+		if (activeKeys.contains(KeyCode.DOWN))
+			moveDown();
+		if (activeKeys.contains(KeyCode.LEFT))
+			moveLeft();
+		if (activeKeys.contains(KeyCode.RIGHT))
+			moveRight();
+
+		if ((activeKeys.contains(KeyCode.UP) && activeKeys.contains(KeyCode.DOWN)) || (activeKeys.contains(KeyCode.LEFT) && activeKeys.contains(KeyCode.RIGHT)))
+			stop();
+
+		if (!activeKeys.contains(KeyCode.UP) && !activeKeys.contains(KeyCode.DOWN) && !activeKeys.contains(KeyCode.LEFT) && !activeKeys.contains(KeyCode.RIGHT))
+			stop();
 	}
 
 	@Override
 	public ActiveActorDestructible fireProjectile() {
-		if (framesSinceLastShot >= MIN_FRAMES_PER_FIRE) {
+		if (framesSinceLastShot >= MIN_FRAMES_PER_FIRE && activeKeys.contains(KeyCode.SPACE)) {
 			framesSinceLastShot = 0;
-			return new UserProjectile(PROJECTILE_X_POSITION, getProjectileYPosition(PROJECTILE_Y_POSITION_OFFSET));
+			return new UserProjectile(getTranslateX() + 100
+					, getProjectileYPosition(PROJECTILE_Y_POSITION_OFFSET));
 		}
 
 		framesSinceLastShot++;

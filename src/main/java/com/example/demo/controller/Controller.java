@@ -8,7 +8,8 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 import com.example.demo.LevelParent;
 
-public class Controller implements Observer {
+public class
+Controller implements Observer {
 
 	public static final String LEVEL_ONE_CLASS_NAME = "com.example.demo.LevelOne"; // Ensure this is accessible
 	private final Stage stage;
