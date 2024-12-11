@@ -2,7 +2,8 @@ package com.example.demo;
 
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,7 +20,9 @@ public class UserPlane extends FighterPlane {
 	private static final int VELOCITY = 8;
 	private static final int PROJECTILE_X_POSITION = 100;
 	private static final int PROJECTILE_Y_POSITION_OFFSET = 20;
-	private static final int MIN_FRAMES_PER_FIRE = 5;
+	private static int MIN_FRAMES_PER_FIRE = 5;
+	private boolean fireRateBoostActive = false;
+	private int originalMinFramesPerFire;
 	private static final Set<KeyCode> activeKeys = new HashSet<>();
 	private int framesSinceLastShot = 0;
 	private int verticalVelocityMultiplier;
@@ -62,6 +65,9 @@ public class UserPlane extends FighterPlane {
 		updatePosition();
 	}
 
+
+
+
 	private void handleInput() {
 		if (activeKeys.contains(KeyCode.UP))
 			moveUp();
@@ -89,6 +95,25 @@ public class UserPlane extends FighterPlane {
 
 		framesSinceLastShot++;
 		return null;
+	}
+
+	public void activateFireRateBoost(long durationInMillis) {
+		if (!fireRateBoostActive) {
+			fireRateBoostActive = true; // Mark the boost as active
+			originalMinFramesPerFire = MIN_FRAMES_PER_FIRE; // Store the original fire rate
+			MIN_FRAMES_PER_FIRE /= 2; // Double the fire rate (reduce frames between shots)
+
+			// Schedule a task to reset the fire rate after the duration
+			Timer timer = new Timer();
+			timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					MIN_FRAMES_PER_FIRE = originalMinFramesPerFire; // Restore the original fire rate
+					fireRateBoostActive = false; // Mark the boost as inactive
+					timer.cancel(); // Stop the timer
+				}
+			}, durationInMillis);
+		}
 	}
 
 	private boolean isMovingVertically() {
@@ -119,6 +144,12 @@ public class UserPlane extends FighterPlane {
 		verticalVelocityMultiplier = 0;
 		horizontalVelocityMultiplier = 0;
 	}
+
+	@Override
+	public void addHealth() {
+		super.addHealth(); // Calls the addHealth method in FighterPlane
+	}
+
 
 	public int getNumberOfKills() {
 		return numberOfKills;

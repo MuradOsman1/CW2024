@@ -31,6 +31,8 @@ Controller implements Observer {
 
 	private void goToLevel(String className) {
 		try {
+			System.out.println("Attempting to load level: " + className);
+
 			Class<?> levelClass = Class.forName(className);
 			Constructor<?> constructor = levelClass.getConstructor(double.class, double.class);
 			currentLevel = (LevelParent) constructor.newInstance(stage.getHeight(), stage.getWidth());
@@ -38,10 +40,13 @@ Controller implements Observer {
 			Scene scene = currentLevel.initializeScene();
 			stage.setScene(scene);
 			currentLevel.startGame();
+			System.out.println("Successfully loaded level: " + className);
 		} catch (Exception e) {
+			e.printStackTrace(); // Print the full error stack trace
 			handleException(e, "Failed to load the level.");
 		}
 	}
+
 
 	@Override
 	public void update(String nextLevel) {

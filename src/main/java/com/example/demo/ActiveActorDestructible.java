@@ -17,6 +17,8 @@ public abstract class ActiveActorDestructible extends ActiveActor implements Des
 	@Override
 	public abstract void takeDamage();
 
+
+
 	@Override
 	public void destroy() {
 		setDestroyed(true);

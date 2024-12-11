@@ -9,6 +9,8 @@ public abstract class FighterPlane extends ActiveActorDestructible {
 		this.health = health;
 	}
 
+
+
 	public abstract ActiveActorDestructible fireProjectile();
 
 	@Override
@@ -17,6 +19,10 @@ public abstract class FighterPlane extends ActiveActorDestructible {
 		if (healthAtZero()) {
 			this.destroy();
 		}
+	}
+
+	public void addHealth() {
+		health++;
 	}
 
 	protected double getProjectileXPosition(double xPositionOffset) {

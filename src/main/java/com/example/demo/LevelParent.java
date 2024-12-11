@@ -80,7 +80,7 @@ public abstract class LevelParent extends Observable {
 		notifyObservers(levelName);
 	}
 
-	private void updateScene() {
+	protected void updateScene() {
 		spawnEnemyUnits();
 		updateActors();
 		generateEnemyFire();
@@ -132,8 +132,21 @@ public abstract class LevelParent extends Observable {
 			enemyProjectiles.add(projectile);
 		}
 	}
+	public LevelParent getLevel() {
+		return this; // Return the current level instance
+	}
 
-	private void updateActors() {
+	public void addHealthToUser() {
+		getUser().addHealth(); // Call the addHealth method in UserPlane
+		levelView.addHeart(); // Update the heart display in the LevelView
+	}
+
+
+
+
+
+
+	protected void updateActors() {
 		friendlyUnits.forEach(ActiveActorDestructible::updateActor);
 		enemyUnits.forEach(ActiveActorDestructible::updateActor);
 		userProjectiles.forEach(ActiveActorDestructible::updateActor);

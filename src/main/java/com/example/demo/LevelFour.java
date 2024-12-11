@@ -1,83 +1,106 @@
-//package com.example.demo;
-//
-//public class LevelFour extends LevelParent {
-//    private static final String BACKGROUND_IMAGE_NAME = "/com/example/demo/images/background4.png";
-//    private static final String NEXT_LEVEL = "com.example.demo.LevelFive";
-//    private static final int TOTAL_ENEMIES = 3;
-//    private static final int KILLS_TO_ADVANCE = 15;
-//    private static final double ENEMY_SPAWN_PROBABILITY = 0.3;
-//    private static final int PLAYER_INITIAL_HEALTH = 5;
-//    private static final int POWER_UP_SPAWN_INTERVAL = 300;
-//
-//    private int powerUpSpawnCounter = 0;
-//
-//    public LevelFour(double screenHeight, double screenWidth) {
-//        super(BACKGROUND_IMAGE_NAME, screenHeight, screenWidth, PLAYER_INITIAL_HEALTH);
-//    }
-//
-//    @Override
-//    protected void checkIfGameOver() {
-//        if (userIsDestroyed()) {
-//            loseGame();
-//        } else if (userHasReachedKillTarget()) {
-//            stopLevel();
-//            goToNextLevel(NEXT_LEVEL);
-//        }
-//    }
-//
-//    @Override
-//    protected void initializeFriendlyUnits() {
-//        getRoot().getChildren().add(getUser());
-//    }
-//
-//    @Override
-//    protected void spawnEnemyUnits() {
-//        int currentNumberOfEnemies = getCurrentNumberOfEnemies();
-//        for (int i = 0; i < TOTAL_ENEMIES - currentNumberOfEnemies; i++) {
-//            if (Math.random() < ENEMY_SPAWN_PROBABILITY) {
-//                double newEnemyInitialYPosition = Math.random() * getEnemyMaximumYPosition();
-//                ActiveActorDestructible newEnemy = new EnemyPlane(getScreenWidth(), newEnemyInitialYPosition);
-//                addEnemyUnit(newEnemy);
-//            }
-//        }
-//    }
-//
-//    @Override
-//    protected LevelView instantiateLevelView() {
-//        return new LevelView(getRoot(), PLAYER_INITIAL_HEALTH);
-//    }
-//
-//    @Override
-//    protected void misc() {
-//        powerUpSpawnCounter++;
-//
-//        if (powerUpSpawnCounter % POWER_UP_SPAWN_INTERVAL == 0) {
-//            spawnPowerUp();
-//        }
-//    }
-//
-//
-//
-//    private void spawnPowerUp() {
-//        double spawnX = getScreenWidth();
-//        double spawnY = Math.random() * getEnemyMaximumYPosition();
-//
-//        ActiveActorDestructible powerUp;
-//        if (Math.random() < 0.5) {
-//            powerUp = new HeartPowerUp(spawnX, spawnY);
-//        } else {
-//            powerUp = new FireRatePowerUp(spawnX, spawnY);
-//        }
-//
-//        addPowerUp(powerUp);
-//    }
-//
-//    private void addPowerUp(ActiveActorDestructible powerUp) {
-//        // This method can be added to LevelParent if needed
-//        getRoot().getChildren().add(powerUp);
-//    }
-//
-//    private boolean userHasReachedKillTarget() {
-//        return getUser().getNumberOfKills() >= KILLS_TO_ADVANCE;
-//    }
-//}
+package com.example.demo;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class LevelFour extends LevelParent {
+
+    private static final String BACKGROUND_IMAGE_NAME = "/com/example/demo/images/background4.png";
+    private static final int TOTAL_ENEMIES = 2;
+    private static final double ENEMY_SPAWN_PROBABILITY = 0.30;
+    private static final int PLAYER_INITIAL_HEALTH = 5;
+
+    private static final int POWERUP_SPAWN_INTERVAL = 100; // Spawn power-ups every 500 frames
+    private int frameCounter = 0; // To track frames for power-up spawning
+
+
+
+    private List<PowerUp> powerUps;
+
+    public LevelFour(double screenHeight, double screenWidth) {
+        // Pass all necessary parameters to LevelParent's constructor
+        super(BACKGROUND_IMAGE_NAME, screenHeight, screenWidth, PLAYER_INITIAL_HEALTH);
+        powerUps = new ArrayList<>();
+    }
+
+    @Override
+    protected void checkIfGameOver() {
+        if (userIsDestroyed()) {
+            loseGame();
+        }
+    }
+
+    @Override
+    protected void initializeFriendlyUnits() {
+        getRoot().getChildren().add(getUser());
+    }
+
+    @Override
+    protected void spawnEnemyUnits() {
+        int currentNumberOfEnemies = getCurrentNumberOfEnemies();
+        for (int i = 0; i < TOTAL_ENEMIES - currentNumberOfEnemies; i++) {
+            if (Math.random() < ENEMY_SPAWN_PROBABILITY) {
+                double newEnemyInitialYPosition = Math.random() * getEnemyMaximumYPosition();
+                ActiveActorDestructible newEnemy = new EnemyPlane(getScreenWidth(), newEnemyInitialYPosition);
+                addEnemyUnit(newEnemy);
+                spawnPowerUp();
+
+            }
+        }
+        // Spawn power-ups periodically
+    }
+
+    private void spawnPowerUp() {
+        double spawnX = Math.random() * getScreenWidth();
+        double spawnY = -50;
+
+        PowerUp powerUp = Math.random() < 0.5
+                ? new HealthPowerUp(spawnX, spawnY, this) // Pass 'this' as the level reference
+                : new FireRatePowerUp(spawnX, spawnY, this);
+        System.out.println("Power-up created at: X=" + spawnX + ", Y=" + spawnY);
+
+        getRoot().getChildren().add(powerUp);
+        powerUps.add(powerUp);
+    }
+
+
+    @Override
+    protected void updateActors() {
+        super.updateActors();
+
+        // Check for collisions with power-ups
+        for (Iterator<PowerUp> iterator = powerUps.iterator(); iterator.hasNext(); ) {
+            PowerUp powerUp = iterator.next();
+            powerUp.updateActor(); // Update the position of the power-up
+
+            if (powerUp.getBoundsInParent().intersects(getUser().getBoundsInParent())) {
+                System.out.println("Power-up collected!");
+                powerUp.applyEffect(getUser()); // Apply the effect to the user
+                getRoot().getChildren().remove(powerUp); // Remove the power-up from the game
+                iterator.remove(); // Remove from the active list
+            }
+        }
+    }
+
+    @Override
+    protected void updateScene() {
+        super.updateScene();
+        System.out.println("updateScene called, frameCounter: " + frameCounter);
+        frameCounter++;
+        if (frameCounter % POWERUP_SPAWN_INTERVAL == 0) {
+            System.out.println("Spawning power-up");
+            spawnPowerUp();
+        }
+    }
+
+    @Override
+    protected LevelView instantiateLevelView() {
+        return new LevelView(getRoot(), PLAYER_INITIAL_HEALTH);
+    }
+
+    @Override
+    protected void misc() {
+        // Custom logic specific to LevelFour (if needed)
+    }
+}
