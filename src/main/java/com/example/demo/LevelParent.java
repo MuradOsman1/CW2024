@@ -9,7 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.*;
 import javafx.util.Duration;
 
-public abstract class LevelParent extends Observable {
+public abstract class LevelParent extends EventNotifier {
 
 	private static final double SCREEN_HEIGHT_ADJUSTMENT = 150;
 	private static final int MILLISECOND_DELAY = 50;
@@ -22,6 +22,7 @@ public abstract class LevelParent extends Observable {
 	private final UserPlane user;
 	private final Scene scene;
 	private final ImageView background;
+	private final CollisionHandler collisionHandler = CollisionHandler.getInstance();
 
 	private final List<ActiveActorDestructible> friendlyUnits;
 	private final List<ActiveActorDestructible> enemyUnits;
@@ -54,6 +55,10 @@ public abstract class LevelParent extends Observable {
 		friendlyUnits.add(user);
 	}
 
+	public LevelView getLevelView() {
+		return levelView;
+	}
+
 	protected abstract void initializeFriendlyUnits();
 
 	protected abstract void checkIfGameOver();
@@ -76,21 +81,22 @@ public abstract class LevelParent extends Observable {
 		timeline.play();
 	}
 
-	public void goToNextLevel(String levelName) {
-		notifyObservers(levelName);
+	protected void goToNextLevel(String nextLevelClassName) {
+		if (getEventListener() != null) {
+			getEventListener().handleEvent(new GameEvent(GameEvent.EventType.LEVEL_COMPLETE, nextLevelClassName));
+		}
 	}
-
 	protected void updateScene() {
 		spawnEnemyUnits();
 		updateActors();
 		generateEnemyFire();
 		updateNumberOfEnemies();
-		handleEnemyPenetration();
 		handleUserProjectileCollisions();
 		handleEnemyProjectileCollisions();
 		handlePlaneCollisions();
 		handleAsteroidCollisions();
 		removeAllDestroyedActors();
+
 		updateKillCount();
 		updateLevelView();
 		checkIfGameOver();
@@ -170,41 +176,26 @@ public abstract class LevelParent extends Observable {
 	}
 
 	private void handlePlaneCollisions() {
-		handleCollisions(friendlyUnits, enemyUnits);
+		collisionHandler.handleCollisions(friendlyUnits, enemyUnits);
 	}
 
 	private void handleUserProjectileCollisions() {
-		handleCollisions(userProjectiles, enemyUnits);
+		collisionHandler.handleCollisions(userProjectiles, enemyUnits);
 	}
 
 	private void handleEnemyProjectileCollisions() {
-		handleCollisions(enemyProjectiles, friendlyUnits);
+		collisionHandler.handleCollisions(enemyProjectiles, friendlyUnits);
 	}
 
 	private void handleAsteroidCollisions() {
-		handleCollisions(userProjectiles, asteroids);
+		collisionHandler.handleCollisions(userProjectiles, asteroids);
+		collisionHandler.handleAsteroidCollisions(user, asteroids);
 	}
 
-	private void handleCollisions(List<ActiveActorDestructible> actors1,
-								  List<ActiveActorDestructible> actors2) {
-		for (ActiveActorDestructible actor : actors2) {
-			for (ActiveActorDestructible otherActor : actors1) {
-				if (actor.getBoundsInParent().intersects(otherActor.getBoundsInParent())) {
-					actor.takeDamage();
-					otherActor.takeDamage();
-				}
-			}
-		}
-	}
 
-	private void handleEnemyPenetration() {
-		for (ActiveActorDestructible enemy : enemyUnits) {
-			if (enemyHasPenetratedDefenses(enemy)) {
-				user.takeDamage();
-				enemy.destroy();
-			}
-		}
-	}
+
+
+
 
 	private void updateLevelView() {
 		levelView.removeHearts(user.getHealth());
@@ -222,12 +213,15 @@ public abstract class LevelParent extends Observable {
 
 	protected void winGame() {
 		timeline.stop();
-		levelView.showWinImage();
+		if (getEventListener() != null) {
+			getEventListener().handleEvent(new GameEvent(GameEvent.EventType.GAME_WIN));
+		}
 	}
-
 	protected void loseGame() {
 		timeline.stop();
-		levelView.showGameOverImage();
+		if (getEventListener() != null) {
+			getEventListener().handleEvent(new GameEvent(GameEvent.EventType.GAME_OVER));
+		}
 	}
 
 	protected void stopLevel() {

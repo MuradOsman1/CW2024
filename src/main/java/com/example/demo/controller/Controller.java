@@ -1,64 +1,66 @@
 package com.example.demo.controller;
 
-import java.lang.reflect.Constructor;
-import com.example.demo.Observer;
-import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
+import com.example.demo.*;
 import javafx.stage.Stage;
-import com.example.demo.LevelParent;
 
-public class
-Controller implements Observer {
-
-	public static final String LEVEL_ONE_CLASS_NAME = "com.example.demo.LevelOne"; // Ensure this is accessible
+public class Controller implements EventListener {
 	private final Stage stage;
 
-	private LevelParent currentLevel;
+	private LevelView currentLevelView;
 
 	public Controller(Stage stage) {
 		this.stage = stage;
 	}
 
 	public void launchGame() {
-		try {
-			stage.show();
-			goToLevel(LEVEL_ONE_CLASS_NAME); // Start from Level One
-		} catch (Exception e) {
-			handleException(e, "Failed to launch the game.");
-		}
+
+		LevelParent level = new LevelOne(stage.getHeight(), stage.getWidth());
+		level.setEventListener(this);
+		stage.setScene(level.initializeScene());
+		stage.show();
+		level.startGame();
 	}
-
-	private void goToLevel(String className) {
-		try {
-			System.out.println("Attempting to load level: " + className);
-
-			Class<?> levelClass = Class.forName(className);
-			Constructor<?> constructor = levelClass.getConstructor(double.class, double.class);
-			currentLevel = (LevelParent) constructor.newInstance(stage.getHeight(), stage.getWidth());
-			currentLevel.addObserver(this);
-			Scene scene = currentLevel.initializeScene();
-			stage.setScene(scene);
-			currentLevel.startGame();
-			System.out.println("Successfully loaded level: " + className);
-		} catch (Exception e) {
-			e.printStackTrace(); // Print the full error stack trace
-			handleException(e, "Failed to load the level.");
-		}
-	}
-
 
 	@Override
-	public void update(String nextLevel) {
-		goToLevel(nextLevel);
+	public void handleEvent(GameEvent event) {
+		switch (event.getEventType()) {
+			case LEVEL_COMPLETE:
+				handleLevelComplete(event.getData());
+				break;
+			case GAME_OVER:
+				handleGameOver();
+				break;
+			case GAME_WIN:
+				handleGameWin();
+				break;
+		}
 	}
 
-	private void handleException(Exception e, String errorMessage) {
-		e.printStackTrace();
-		Alert alert = new Alert(AlertType.ERROR);
-		alert.setTitle("Error");
-		alert.setHeaderText(errorMessage);
-		alert.setContentText(e.getMessage());
-		alert.showAndWait();
+	private void handleLevelComplete(String nextLevelClassName) {
+		try {
+			Class<?> nextLevelClass = Class.forName(nextLevelClassName);
+			LevelParent nextLevel = (LevelParent) nextLevelClass
+					.getConstructor(double.class, double.class)
+					.newInstance(stage.getHeight(), stage.getWidth());
+			nextLevel.setEventListener(this);
+			stage.setScene(nextLevel.initializeScene());
+			currentLevelView = nextLevel.getLevelView();
+			nextLevel.setEventListener(this);
+			nextLevel.startGame();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void handleGameOver() { // Dummy view for now
+		currentLevelView.showGameOverImage(); // Display the game over image
+		// Optionally, transition back to the main menu or restart
+	}
+
+	private void handleGameWin() {
+		System.out.println("Congratulations, You Win!");
+		LevelView levelView = new LevelView(new javafx.scene.Group(), 0); // Dummy view for now
+		levelView.showWinImage(); // Display the win image
+		// Optionally, transition to a win screen or restart
 	}
 }

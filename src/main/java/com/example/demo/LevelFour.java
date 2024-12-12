@@ -7,11 +7,12 @@ import java.util.List;
 public class LevelFour extends LevelParent {
 
     private static final String BACKGROUND_IMAGE_NAME = "/com/example/demo/images/background4.png";
-    private static final int TOTAL_ENEMIES = 2;
+    private static final int TOTAL_ENEMIES = 4;
     private static final double ENEMY_SPAWN_PROBABILITY = 0.30;
-    private static final int PLAYER_INITIAL_HEALTH = 5;
+    private static final int KILLS_TO_ADVANCE = 1;
+    private static final int PLAYER_INITIAL_HEALTH = 3;
 
-    private static final int POWERUP_SPAWN_INTERVAL = 100; // Spawn power-ups every 500 frames
+    private static final int POWERUP_SPAWN_INTERVAL = 20; // Spawn power-ups every 500 frames
     private int frameCounter = 0; // To track frames for power-up spawning
 
 
@@ -29,11 +30,19 @@ public class LevelFour extends LevelParent {
         if (userIsDestroyed()) {
             loseGame();
         }
+        else if (userHasReachedKillTarget()) {
+            stopLevel();
+            winGame();
+        }
     }
 
     @Override
     protected void initializeFriendlyUnits() {
         getRoot().getChildren().add(getUser());
+    }
+
+    private boolean userHasReachedKillTarget() {
+        return getUser().getNumberOfKills() >= KILLS_TO_ADVANCE;
     }
 
     @Override
@@ -44,7 +53,7 @@ public class LevelFour extends LevelParent {
                 double newEnemyInitialYPosition = Math.random() * getEnemyMaximumYPosition();
                 ActiveActorDestructible newEnemy = new EnemyPlane(getScreenWidth(), newEnemyInitialYPosition);
                 addEnemyUnit(newEnemy);
-                spawnPowerUp();
+
 
             }
         }
