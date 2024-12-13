@@ -1,6 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.*;
+import com.example.demo.EventHandler.EventListener;
+import com.example.demo.EventHandler.GameEvent;
+import com.example.demo.Level.LevelView.LevelView;
+import com.example.demo.Level.levels.LevelOne;
+import com.example.demo.Level.LevelParent;
+import com.example.demo.UserInterface.GameOverImage;
 import javafx.stage.Stage;
 
 public class Controller implements EventListener {
@@ -12,6 +17,10 @@ public class Controller implements EventListener {
 		this.stage = stage;
 	}
 
+	/**
+	 * Launches the initial {@link LevelParent} and sets up the game environment.
+	 *
+	 */
 	public void launchGame() {
 
 		LevelParent level = new LevelOne(stage.getHeight(), stage.getWidth());
@@ -21,6 +30,11 @@ public class Controller implements EventListener {
 		level.startGame();
 	}
 
+	/**
+	 * Handles game events and takes appropriate actions based on the event type.
+	 *
+	 * @param event the {@link GameEvent} containing the type of event and associated data
+	 */
 	@Override
 	public void handleEvent(GameEvent event) {
 		switch (event.getEventType()) {
@@ -36,6 +50,10 @@ public class Controller implements EventListener {
 		}
 	}
 
+	/**
+	 * Handles the completion of a level by transitioning to the next level.
+	 * @param nextLevelClassName is the name of the next class to be loaded for the next level
+	 */
 	private void handleLevelComplete(String nextLevelClassName) {
 		try {
 			Class<?> nextLevelClass = Class.forName(nextLevelClassName);
@@ -52,11 +70,19 @@ public class Controller implements EventListener {
 		}
 	}
 
-	private void handleGameOver() { // Dummy view for now
+	/**
+	 * Handles the game over event by displaying the game over image{@link GameOverImage} and transitioning back to the main menu.
+	 */
+	private void handleGameOver() {
 		currentLevelView.showGameOverImage(); // Display the game over image
 		// Optionally, transition back to the main menu or restart
 	}
 
+
+
+	/**
+	 * Handles the end-of-game win scenario by displaying a congratulatory message from {@link LevelView}
+	 */
 	private void handleGameWin() {
 		System.out.println("Congratulations, You Win!");
 		LevelView levelView = new LevelView(new javafx.scene.Group(), 0); // Dummy view for now

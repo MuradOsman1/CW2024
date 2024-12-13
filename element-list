@@ -1,0 +1,15 @@
+module:com.example.demo
+com.example.demo
+com.example.demo.CollisionHandler
+com.example.demo.controller
+com.example.demo.Entity
+com.example.demo.Entity.Boss
+com.example.demo.Entity.Enemy
+com.example.demo.Entity.Entities
+com.example.demo.Entity.Player
+com.example.demo.Entity.PowerUp
+com.example.demo.EventHandler
+com.example.demo.Level
+com.example.demo.Level.levels
+com.example.demo.Level.LevelView
+com.example.demo.UserInterface
